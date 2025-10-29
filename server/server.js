@@ -13,7 +13,7 @@ const io = new Server(server, {
   cors: { origin: '*' }, // permite qualquer origem (React + ESP)
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // -------------------- ESTADO DO JOGO --------------------
 let players = {}; // { socketId: "X" ou "O" }
