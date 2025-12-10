@@ -1,14 +1,19 @@
+// -------------------- CONFIGURAÇÃO / VARIÁVEIS GERAIS --------------------
 struct Point {
   int x;
   int y;
 };
 
+// -------------------- COBRA --------------------
 Point snake[256];
 int snakeLength = 3;
-String direction = "right";  // "up","down","left","right" (internal canonical)
+String direction = "right";       // "up","down","left","right" (interno)
 String lastDirection = "right";
 
+// -------------------- COMIDA --------------------
 Point food;
+
+// -------------------- GAMEPLAY --------------------
 int gameSpeed = 150;
 bool start_game = true;
 
@@ -32,7 +37,7 @@ void deathAnimation() {
   start_game = true;
 }
 
-// -------------------- DESENHA COBRA --------------------
+// -------------------- DESENHAR COBRA --------------------
 void drawSnake() {
   FastLED.clear();
   leds[xy(food.x, food.y)] = CRGB::Red;
@@ -41,6 +46,7 @@ void drawSnake() {
   FastLED.show();
 }
 
+// -------------------- SPAWN DE COMIDA --------------------
 void spawnFood() {
   bool valid = false;
   while (!valid) {
@@ -56,8 +62,8 @@ void spawnFood() {
   }
 }
 
+// -------------------- CRIAR COBRA --------------------
 void criarCobra() {
-  // centraliza a cobra
   snake[0] = { WIDTH / 2, HEIGHT / 2 };
   snake[1] = { WIDTH / 2 - 1, HEIGHT / 2 };
   snake[2] = { WIDTH / 2 - 2, HEIGHT / 2 };
@@ -66,7 +72,7 @@ void criarCobra() {
   lastDirection = "right";
 }
 
-// movement
+// -------------------- MOVIMENTO --------------------
 void moveSnake() {
   for (int i = snakeLength - 1; i > 0; i--)
     snake[i] = snake[i - 1];
@@ -76,18 +82,46 @@ void moveSnake() {
   else if (direction == "left") snake[0].x--;
   else if (direction == "right") snake[0].x++;
 
+  // Teletransporte nas bordas
   if (snake[0].x < 0) snake[0].x = WIDTH - 1;
   if (snake[0].x >= WIDTH) snake[0].x = 0;
   if (snake[0].y < 0) snake[0].y = HEIGHT - 1;
   if (snake[0].y >= HEIGHT) snake[0].y = 0;
 
+  // Comer comida
   if (snake[0].x == food.x && snake[0].y == food.y) {
     snakeLength++;
     spawnFood();
   }
 }
 
-// --- Jogo principal (chamado pela main) ---
+// -------------------- PROCESSAR DIREÇÃO --------------------
+void processDirection(String newDir) {
+  if(newDir == "center" || newDir == "") return;
+  String mapped = "center";
+
+  // Rotaciona 90° se necessário
+  if (newDir == "up") mapped = "up";
+  else if (newDir == "right") mapped = "right";
+  else if (newDir == "down") mapped = "down";
+  else if (newDir == "left") mapped = "left";
+
+  if (mapped == "center") return;
+
+  // Impede reversão imediata
+  bool reverse =
+      (lastDirection == "up" && mapped == "down") ||
+      (lastDirection == "down" && mapped == "up") ||
+      (lastDirection == "left" && mapped == "right") ||
+      (lastDirection == "right" && mapped == "left");
+
+  if (reverse) return;
+
+  direction = mapped;
+  lastDirection = direction;
+}
+
+// -------------------- JOGO PRINCIPAL --------------------
 void startSnakeGame() {
   static unsigned long lastMove = 0;
   static bool initialized = false;
@@ -112,36 +146,9 @@ void startSnakeGame() {
       lastMove = now;
       return;
     }
-    processDirection(directionJoy);
+
+    processDirection(directionJoy);  // directionJoy vem do joystick principal
     drawSnake();
     lastMove = now;
   }
-}
-
-
-
-void processDirection(String newDir) {
-  if(newDir == "center" || newDir == "") return;
-  String mapped = "center";
-
-  // Rotaciona 90° (se quiser remover é só avisar)
-  if (newDir == "up") mapped = "up";
-  else if (newDir == "right") mapped = "right";
-  else if (newDir == "down") mapped = "down";
-  else if (newDir == "left") mapped = "left";
-
-  if (mapped == "center") return;
-
-  // Impede reversão imediata (anti-oposto)
-  bool reverse =
-      (lastDirection == "up" && mapped == "down") ||
-      (lastDirection == "down" && mapped == "up") ||
-      (lastDirection == "left" && mapped == "right") ||
-      (lastDirection == "right" && mapped == "left");
-
-  if (reverse) return;
-
-  // Atualiza direção final
-  direction = mapped;
-  lastDirection = direction;
 }
