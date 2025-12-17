@@ -37,6 +37,30 @@ Piece pieces[7] = {
   { { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 2, 1 } }, CRGB::Red }      // Z
 };
 
+int bag[7];
+int bagIndex = 7;
+
+void refillBag() {
+  for (int i = 0; i < 7; i++) bag[i] = i;
+
+  // Fisher-Yates Shuffle
+  for (int i = 6; i > 0; i--) {
+    int r = random(0, i + 1);
+    int tmp = bag[i];
+    bag[i] = bag[r];
+    bag[r] = tmp;
+  }
+
+  bagIndex = 0;
+}
+
+int nextFromBag() {
+  if (bagIndex >= 7)
+    refillBag();
+
+  return bag[bagIndex++];
+}
+
 // ------------ SCORE 5 dígitos ------------
 CRGB coresScore[5] = {
   CRGB::Red,
@@ -52,8 +76,10 @@ void tetrisInit() {
     for (int x = 0; x < T_WIDTH; x++)
       tetrisBoard[y][x] = CRGB::Black;
 
-  currentPiece = pieces[random(0, 7)];
-  nextPiece = pieces[random(0, 7)];
+  refillBag(); // inicia o primeiro saco
+
+  currentPiece = pieces[nextFromBag()];
+  nextPiece = pieces[nextFromBag()];
 
   px = 3;
   py = 0;
@@ -113,7 +139,7 @@ void fixaPeca() {
     if (ty >= 0)
       tetrisBoard[ty][tx] = currentPiece.color;
   }
-  spawnNovaPeca();  // chama a função que trata game over
+  
 }
 
 // ------------ QUEDA ------------
@@ -123,6 +149,7 @@ void cair() {
     else {
       fixaPeca();
       checkLinhas();
+      spawnNovaPeca();
     }
     lastFall = millis();
   }
@@ -133,19 +160,24 @@ unsigned long lastMoveJoy = 0;
 int moveDelay = 100;
 
 void controlarTetris() {
-  unsigned long agora = millis();
+  static String lastDir = "center";
 
-  if (directionJoy != "center" && agora - lastMoveJoy > moveDelay) {
+  if (directionJoy != "center" && directionJoy != lastDir) {
 
     if (directionJoy == "left" && !colide(px - 1, py)) px--;
     if (directionJoy == "right" && !colide(px + 1, py)) px++;
-    if (directionJoy == "down") fallSpeed = 80;
 
-    lastMoveJoy = agora;
+    lastDir = directionJoy;
   }
 
-  if (directionJoy == "center") fallSpeed = 350;
+  if (directionJoy == "center") {
+    lastDir = "center";
+  }
+
+  // queda rápida
+  fallSpeed = (directionJoy == "down") ? 80 : 350;
 }
+
 
 // ------------ DESENHO ------------
 void desenharTetris() {
@@ -213,7 +245,6 @@ void piscarLinhas(int linhas[], int qtd) {
   }
 }
 
-
 void checkLinhas() {
   int linhasParaLimpar[4];  // máximo 4 linhas de uma vez
   int qtdLinhas = 0;
@@ -254,13 +285,15 @@ void checkLinhas() {
 
 void spawnNovaPeca() {
   currentPiece = nextPiece;
-  nextPiece = pieces[random(0, 7)];
+  nextPiece = pieces[nextFromBag()];
 
+  // posição inicial padrão (centralizada horizontalmente no teu setup)
   px = 3;
   py = 0;
 
+  // se já colidir ao nascer -> game over
   if (colide(px, py)) {
-    gameOver = true;  // jogo acabou
+    gameOver = true;
   }
 }
 
@@ -329,12 +362,12 @@ void tetrisLoop() {
   if (!tetrisStarted) tetrisInit();
 
   if (!gameOver) {
-    controlarTetris();
+    controlarTetris();   // ← único lugar do joystick
     cair();
     desenharTetris();
     if (botaoClique) rotacionarPeca();
   } else {
-    desenharScoreCentralizado();  // exibe score centralizado quando game over
+    desenharScoreCentralizado();
     delay(3000);
     reiniciarJogo();
   }

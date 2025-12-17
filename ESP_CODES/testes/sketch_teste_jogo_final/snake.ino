@@ -125,7 +125,7 @@ void processDirection(String newDir) {
 void startSnakeGame() {
   static unsigned long lastMove = 0;
   static bool initialized = false;
-
+  if (!botaoSoltoAgora()) return;
   if (!initialized) {
     FastLED.clear();
     criarCobra();

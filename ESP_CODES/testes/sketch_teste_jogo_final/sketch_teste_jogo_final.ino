@@ -30,11 +30,6 @@ int brilho = 20;
 #define PIN_Y 35
 #define PIN_SW 14
 
-// SEGUNDA MANETE
-#define PIN_X2 32
-#define PIN_Y2 33
-#define PIN_SW2 27
-
 int eixoX = 0;
 int eixoY = 0;
 int botao = HIGH;
@@ -42,9 +37,9 @@ int botaoAnterior = HIGH;
 bool botaoClique = false;
 unsigned long tempoPressionado = 0;
 
-int centerX = 2000;
-int centerY = 2000;
-int deadzone = 200;
+int centerX = 1700;
+int centerY = 1700;
+int deadzone = 500;
 
 String directionJoy = "";
 String lastDirectionJoy = "";
@@ -59,9 +54,19 @@ String currentGame = "menu";
 int board[3][3] = { {0,0,0},{0,0,0},{0,0,0} };
 int xvelha = 1;
 int yvelha = 1;
-bool turno = true;
+
+bool velhaFinalizada  = false;
+bool turno = true; // true = X, false = O
+
 int lastX = -1;
 int lastY = -1;
+
+// -------------------- JOGO DA LABIRINTO --------------------
+int playerX = 0;
+int playerY = 0;
+
+bool mazeRunning = false;   // labirinto ativo
+bool mazeFinished = false;  // chegou no final
 
 // -------------------- CORES PADRÃO --------------------
 #define PRETO   CRGB(0,0,0)
@@ -71,18 +76,18 @@ int lastY = -1;
 const CRGB image16x16[16*16] = {
   PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO,
   PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO,
-  PRETO, PRETO, CRGB(167,255,0), BRANCO, CRGB(52,25,25), CRGB(255,0,0), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, BRANCO, CRGB(0,1,93), BRANCO, CRGB(0,1,93), PRETO, PRETO,
-  PRETO, PRETO, CRGB(141,205,20), CRGB(52,25,25), CRGB(52,25,25), CRGB(52,25,25), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(0,1,93), BRANCO, CRGB(0,1,93), BRANCO, PRETO, PRETO,
-  PRETO, PRETO, CRGB(167,255,0), CRGB(52,25,25), CRGB(52,25,25), CRGB(141,205,20), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, BRANCO, CRGB(0,1,93), BRANCO, CRGB(0,1,93), PRETO, PRETO,
-  PRETO, PRETO, CRGB(141,205,20), CRGB(167,255,0), CRGB(141,205,20), CRGB(167,255,0), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(0,1,93), BRANCO, CRGB(0,1,93), BRANCO, PRETO, PRETO,
+  PRETO, PRETO, CRGB(167,255,0), BRANCO, CRGB(52,25,25), CRGB(255,0,0), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(0,64,233), BRANCO, BRANCO, CRGB(0,64,233), PRETO, PRETO,
+  PRETO, PRETO, CRGB(141,205,20), CRGB(52,25,25), CRGB(52,25,25), CRGB(52,25,25), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(0,64,233), CRGB(0,64,233), BRANCO, BRANCO, PRETO, PRETO,
+  PRETO, PRETO, CRGB(167,255,0), CRGB(52,25,25), CRGB(52,25,25), CRGB(141,205,20), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, BRANCO, BRANCO, BRANCO, CRGB(0,64,233), PRETO, PRETO,
+  PRETO, PRETO, CRGB(141,205,20), CRGB(167,255,0), CRGB(141,205,20), CRGB(167,255,0), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(0,64,233), BRANCO, CRGB(0,64,233), CRGB(0,64,233), PRETO, PRETO,
   PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO,
   PRETO, CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), PRETO,
   PRETO, CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), CRGB(212,0,255), PRETO,
   PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO,
-  PRETO, PRETO, CRGB(167,255,0), CRGB(167,255,0), CRGB(167,255,0), CRGB(0,255,227), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(0,255,227), PRETO, PRETO, CRGB(141,205,20), PRETO, PRETO,
-  PRETO, PRETO, CRGB(0,36,255), CRGB(255,0,0), CRGB(167,255,0), CRGB(212,0,255), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, PRETO, PRETO, CRGB(141,205,20), PRETO, PRETO, PRETO,
-  PRETO, PRETO, CRGB(0,36,255), CRGB(255,0,0), CRGB(255,0,0), CRGB(212,0,255), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, PRETO, CRGB(141,205,20), PRETO, PRETO, PRETO, PRETO,
-  PRETO, PRETO, CRGB(0,36,255), CRGB(255,0,0), CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(141,205,20), PRETO, PRETO, CRGB(255,0,0), PRETO, PRETO,
+  PRETO, PRETO, CRGB(167,255,0), CRGB(167,255,0), CRGB(167,255,0), CRGB(0,255,227), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(0,207,233), BRANCO, CRGB(0,207,233), BRANCO, PRETO, PRETO,
+  PRETO, PRETO, CRGB(0,36,255), CRGB(255,0,0), CRGB(167,255,0), CRGB(212,0,255), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, BRANCO, CRGB(0,207,233), CRGB(255,0,0), BRANCO, PRETO, PRETO,
+  PRETO, PRETO, CRGB(0,36,255), CRGB(255,0,0), CRGB(255,0,0), CRGB(212,0,255), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(0,207,233), CRGB(255,0,0), CRGB(0,207,233), CRGB(255,0,0), PRETO, PRETO,
+  PRETO, PRETO, CRGB(0,36,255), CRGB(255,0,0), CRGB(212,0,255), CRGB(212,0,255), PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, BRANCO, BRANCO, CRGB(255,0,0), BRANCO, PRETO, PRETO,
   PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, CRGB(212,0,255), CRGB(212,0,255), PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO,
   PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO, PRETO,
 };
@@ -128,7 +133,7 @@ const char* PASSWORD = "12345678";
 //   }
 
 //   if (WiFi.status() == WL_CONNECTED) {
-//     Serial.println("\n✅ Wi-Fi conectado!");
+//      
 //     Serial.print("📡 IP: "); Serial.println(WiFi.localIP());
 //   } else {
 //     Serial.println("\n❌ Falha ao conectar ao Wi-Fi!");
@@ -143,6 +148,18 @@ void lerJoystick() {
   botaoAnterior = botao;           
   botao = digitalRead(PIN_SW);     
   botaoClique = (botaoAnterior == HIGH && botao == LOW);
+}
+
+bool botaoSoltoAgora() {
+  static int estadoAnterior = HIGH;
+  bool soltou = false;
+
+  if (estadoAnterior == LOW && botao == HIGH) {
+    soltou = true;
+  }
+
+  estadoAnterior = botao;
+  return soltou;
 }
 
 void atualizarDirecaoJoystick() {
@@ -161,7 +178,6 @@ void atualizarDirecaoJoystick() {
   else directionJoy = "center";
 
   if (directionJoy != lastDirectionJoy) {
-    Serial.println(directionJoy);
     lastDirectionJoy = directionJoy;
   }
 }
@@ -173,47 +189,65 @@ int px, py;
 
 void atualizarCursor() {
 
+  // Controle para evitar movimento contínuo
   if (directionJoy == "center") { lastMove = "center"; return; }
   if (lastMove != "center") return;
   lastMove = directionJoy;
 
-  if(currentGame == "menu"){ 
+  // ---------------- MENU ----------------
+  if (currentGame == "menu") {
     if (directionJoy == "down")  ymenu = 9;
     if (directionJoy == "up")    ymenu = 1;
     if (directionJoy == "right") xmenu = 9;
     if (directionJoy == "left")  xmenu = 1;
   }
-
-  if(currentGame == "velha"){ 
-    if(directionJoy == "down"  && yvelha < 11) yvelha += 5;
-    if(directionJoy == "up"    && yvelha > 1 ) yvelha -= 5;
-    if(directionJoy == "right" && xvelha < 11) xvelha += 5;
-    if(directionJoy == "left"  && xvelha > 1 ) xvelha -= 5;
+  // ---------------- JOGO DA VELHA ----------------
+  else if (currentGame == "velha") {
+    if (directionJoy == "down"  && yvelha < 11) yvelha += 5;
+    if (directionJoy == "up"    && yvelha > 1 ) yvelha -= 5;
+    if (directionJoy == "right" && xvelha < 11) xvelha += 5;
+    if (directionJoy == "left"  && xvelha > 1 ) xvelha -= 5;
   }
-
-  if(currentGame == "tetris"){ 
-    if(directionJoy == "right" && lastMove == "center" && !colide(px+1, py)) px++;
-    if(directionJoy == "left" && lastMove == "center" && !colide(px-1, py)) px--;
-    if(directionJoy == "down"){
-      if(!colide(px,py+1)) py++;
-      else fixaPeca();
+  // ---------------- MAZE ----------------
+  else if (currentGame == "maze") {
+    if (directionJoy == "up" && isWall(playerX, playerY - 1)) {
+      playerY--;
     }
+    else if (directionJoy == "down" && isWall(playerX, playerY + 1)) {
+      playerY++;
+    }
+    else if (directionJoy == "left" && isWall(playerX - 1, playerY)) {
+      playerX--;
+    }
+    else if (directionJoy == "right" && isWall(playerX + 1, playerY)) {
+      playerX++;
+    }
+    Serial.print("Moveu para ");
+    Serial.print(directionJoy);
+    Serial.print(" | X=");
+    Serial.print(playerX);
+    Serial.print(" Y=");
+    Serial.println(playerY);
   }
 }
+
 
 // -------------------- MENU / SELEÇÃO --------------------
 void detectarSelecaoMenu() {
-  if (botao != 0) return;
+  if (!botaoSoltoAgora()) return;
+
   if (xmenu == 1 && ymenu == 1) currentGame = "snake";
   else if (xmenu == 1 && ymenu == 9) currentGame = "tetris";
-  else if (xmenu == 9 && ymenu == 1) currentGame = "tron";
+  else if (xmenu == 9 && ymenu == 1) currentGame = "maze";
   else if (xmenu == 9 && ymenu == 9) currentGame = "velha";
 }
 
+
+//ajustar isso aq------------------------------------------------------------------------------------------
 void verificarBotaoPressionado() {
   if (botao == LOW) {
     if (tempoPressionado == 0) tempoPressionado = millis();
-    if (millis() - tempoPressionado > 1500) ESP.restart();
+    if (millis() - tempoPressionado > 1500)ESP.restart();
   } else tempoPressionado = 0;
 }
 
@@ -221,15 +255,15 @@ void verificarBotaoPressionado() {
 void executarJogoAtual() {
   if (currentGame == "menu") mostrarImagem(xmenu, ymenu);
   else if (currentGame == "snake") startSnakeGame();
-  else if (currentGame == "velha") startVelhaGame();
+  else if (currentGame == "velha")startVelhaGame();
   else if (currentGame == "tetris") tetrisLoop();
-  else if (currentGame == "tron") startTron();
+  //melehorar a interação
+  else if (currentGame == "maze") startMaze();
 }
 
 // -------------------- SETUP --------------------
 void setup() {
   Serial.begin(115200);
-  delay(300);
 
   pinMode(PIN_SW, INPUT_PULLUP);
 
@@ -237,16 +271,16 @@ void setup() {
   FastLED.setBrightness(brilho);
 
   // connectWiFi();
-  Serial.println("  ESP iniciado!");
 }
 
 // -------------------- LOOP --------------------
 void loop() {
-  lerJoystick();
-  atualizarDirecaoJoystick();
-  atualizarCursor();
-  detectarSelecaoMenu();
-  verificarBotaoPressionado();
-  executarJogoAtual();
-  delay(10);
+
+    lerJoystick();
+    atualizarDirecaoJoystick();
+    atualizarCursor();
+    detectarSelecaoMenu();
+    verificarBotaoPressionado();
+    executarJogoAtual();
+  
 }

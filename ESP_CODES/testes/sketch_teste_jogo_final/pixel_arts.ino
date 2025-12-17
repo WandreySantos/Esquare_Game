@@ -13,7 +13,7 @@
 #define CIANO_CLARO     CRGB(0,255,227)
 #define AZUL      CRGB(0,100,255)
 #define AZUL_FORTE      CRGB(0,36,255)
-#define AMARELO_CLARO CRGB(255,255,20)
+#define AMARELO_CLARO CRGB(255,255,240)
 #define AZUL_ESCURO   CRGB(0,50,200)
 
 // -------------------- IMAGEM INICIAL --------------------
